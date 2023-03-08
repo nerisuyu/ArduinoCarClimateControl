@@ -42,10 +42,8 @@
 
 
 ////////адреса в памяти////////
-#define EEPROM_POT sizeof(int)
 #define EEPROM_SERVO 0
-#define EEPROM_PID 10*sizeof(int)
-#define EEPROM_THERMO 20*sizeof(int)
+#define EEPROM_PID 2*sizeof(int)
 
 
 #ifndef APSSID
@@ -53,9 +51,9 @@
 #define APPSK  "sochi2014"
 #endif
 
-#define TIMER_DEBUG 1       //о скорости работы
-#define SERVER_DEBUG 0      //сервера
-#define TEMP_DEBUG 1       //температур
+#define TIMER_DEBUG 0       //о скорости работы
+#define SERVER_DEBUG 1      //сервера
+#define TEMP_DEBUG 0       //температур
 #define DERIVATIVE_DEBUG 0  //вычисления производных
 #define SERVO_DEBUG 0       //серво
 #define LIGHT_DEBUG 0       //измерения света
@@ -221,9 +219,7 @@ void setup(){
   sensors.setResolution(sensor_2, 12);
   sensors.setResolution(sensor_3, 12);
   load_k();
-  //EEPROM.get(EEPROM_THERMO,measured_temperature_1);
-  //EEPROM.get(EEPROM_THERMO+sizeof(int),measured_temperature_2);
-  //EEPROM.get(EEPROM_THERMO+2*sizeof(int),measured_temperature_3);
+
 
 }
 
@@ -333,10 +329,6 @@ void measure_temperature(){ //измерение температур
       Serial.print(" ");
       Serial.println(measured_temperature_3);
     }
-    //EEPROM.put(EEPROM_THERMO,measured_temperature_1);
-    //EEPROM.put(EEPROM_THERMO+sizeof(int),measured_temperature_2);
-    //EEPROM.put(EEPROM_THERMO+2*sizeof(int),measured_temperature_3);
-    //EEPROM.commit();
   }
 }
 
@@ -663,12 +655,16 @@ float step_by_step_search( float prev_servo_value, float current_temperature, fl
 }
 
 void loop(){
+  
   if(TIMER_DEBUG){  //Вычисление времени, потраченного на последний loop()
     static int timer=0;
     Serial.print("frame time: ");
     Serial.println(millis()-timer);
     timer=millis();
   }
+  
+
+  
   server.handleClient();
 
   process_pot();
@@ -710,4 +706,5 @@ void loop(){
     }
   }
   moveServo();
+  delay(10);
 }
