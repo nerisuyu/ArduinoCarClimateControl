@@ -1,0 +1,355 @@
+const char MAIN_page[] PROGMEM = R"=====(
+
+<!DOCTYPE html>
+<html>
+<head>
+   <meta charset="utf-8">
+<title>Climate Control</title>
+</head>
+
+<style>
+.title{
+  vertical-align: middle;
+  margin-top: 50px;
+
+  border: 0px none;
+  background: rgba(0, 0, 0, 0) none repeat scroll 0% 0%;
+  font: normal bold normal 40px Arial;
+  text-align: center;
+  color: rgb(34, 34, 34);
+  padding: 0px;
+}
+
+.title2{
+  vertical-align: middle;
+  margin-top: 50px;
+
+  border: 0px none;
+  background: rgba(0, 0, 0, 0) none repeat scroll 0% 0%;
+  font: normal bold normal 30px Arial;
+  text-align: center;
+  color: rgb(34, 34, 34);
+  padding: 0px;
+}
+
+.value{
+  width: 150px;
+  float: right;
+  border: 1px none;
+  font: normal bold normal 50px Arial;
+  text-align: left;
+}
+
+
+.container {
+    position: relative;
+    background-color: #eef2ee;
+}
+
+input[type=text], select {
+  width: 100%;
+  padding: 12px 20px;
+  margin: 8px 0;
+  display: inline-block;
+  border: 2px solid #ccc;
+  border-radius: 10px;
+  box-sizing: border-box;
+}
+
+input[type=submit] {
+  width: 100%;
+
+  background-color: #4CAFff;
+  color: white;
+  padding: 14px 20px;
+  margin: 8px 0;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+input[type=submit]:hover {
+  background-color: #45a000;
+}
+
+div {
+  border-radius: 5px;
+  margin: 20px
+
+}
+
+
+.column{
+float: left;
+width: 40%;
+}
+
+.row:after{
+content "";
+display: table;
+clear: both;
+}
+
+.big
+{
+    height:80px;
+    font-size:30px;
+}
+
+.button {
+    border: 0;
+    line-height: 1.5;
+    padding: 0 20px;
+    font-size: 3rem;
+    text-align: center;
+    color: #333;
+    text-shadow: 1px 1px 1px #000;
+    border-radius: 10px;
+    background-color: rgba(f, f, f, 1);
+    background-image: linear-gradient(to top left,
+                                      rgba(1, 0, 0, .2),
+                                      rgba(0, 1, 0, .2) 30%,
+                                      rgba(0, 0, 1, 0));
+    box-shadow: inset 2px 2px 3px rgba(255, 255, 255, .6),
+                inset -2px -2px 3px rgba(0, 0, 0, .6);
+}
+
+
+
+
+.button:active {
+    box-shadow: inset -2px -2px 3px rgba(255, 255, 255, .6),
+                inset 2px 2px 3px rgba(0, 0, 0, .6);
+}
+</style>
+
+<body>
+
+
+
+<div style="width: 75%; margin: 0 auto;" class="container">
+  <div class="label">
+    <text  fill="#777" class="title">Pot percent:</text>
+    <text  fill="#777" id="pot_percent" class="value">123</text>
+  </div>
+  <div class="label">
+    <text  fill="#777" class="title">Wanted salon t:</text>
+    <text  fill="#777" id="wanted_temp" class="value">1222</text>
+  </div>
+  <div class="label">
+    <text  fill="#777" class="title">Salon t3:</text>
+    <text  fill="#777" id="temp3" class="value">1242424</text>
+  </div>
+  <div class="label">
+    <text  fill="#777" class="title">Street t2:</text>
+    <text  fill="#777" id="temp2" class="value">1</text>
+  </div>
+  <div class="label">
+    <text  fill="#777" class="title">Wanted stream t:</text>
+    <text  fill="#777" id="wanted_temp2" class="value">1</text>
+  </div>
+  <div>
+    <text  fill="#777" class="title">Stream t1:</text>
+    <text  fill="#777" id="temp1" class="value ">0</text>
+  </div>
+  <div class="label">
+    <text  fill="#777" class="title">Servo Percent:</text>
+    <text  fill="#777" id="servo_percent" class="value">1</text>
+  </div>
+  <div class="label">
+    <text  fill="#777" class="title">Light level:</text>
+    <text  fill="#777" id="light_level" class="value">1</text>
+  </div>
+
+</div>
+
+<div style="width: 50%; margin: 0 auto;" class="flx">
+
+      <div class ="row">
+        <div class ="column">
+        <form name="k_form">
+          <text  fill="#777" class="title2" >k1 Допуск</text>
+          <input type="text" name="k1" id="k1" value="1" class="big"><br>
+          <text  fill="#777" class="title2" >k2 Шаг</text>
+          <input type="text" name="k2" id="k2" value="2" class="big"><br>
+          <text  fill="#777" class="title2" >k3 Задержка</text>
+          <input type="text" name="k3" id="k3" value="3" class="big"><br>
+          </form>
+        </div>
+
+        <div class ="column">
+        <form name="k_form2">
+          <text  fill="#777" class="title2" >k4</text>
+          <input type="text" name="k4" id="k4" value="4" class="big"><br>
+          <text  fill="#777" class="title2" >k5</text>
+          <input type="text" name="k5" id="k5" value="5" class="big"><br>
+          <text  fill="#777" class="title2" >k6</text>
+          <input type="text" name="k6" id="k6" value="6" class="big"><br>
+          </form>
+        </div>
+      </div>
+
+
+
+  <div class="label">
+    <button id="myBtnSave"  class="button">Save</button>
+  </div>
+  <div class="label">
+    <button id="myBtnLoad"  class="button">Load</button>
+    <text  fill="#777" id="loaded" class="value"></text>
+    <text  fill="#777" id="saved" class="value"></text>
+    <text  fill="#777" id="updated" class="value"></text>
+  </div>
+</div>
+
+
+<script>
+
+
+
+var shouldUpdate=0;
+var step=0;
+
+window.onload = (event) => {
+  getParameters()
+  resetClock()
+  console.log('page is fully loaded');
+  shouldUpdate=1;
+};
+function resetClock() {
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      console.log(this.responseText);
+    }
+  };
+  xhttp.open("GET", "resetClock", true);
+  xhttp.send();
+}
+
+
+function getData() {
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      console.log(this.responseText);
+      var arr=this.responseText.split("|");
+      document.getElementById("temp1").innerHTML=arr[0];
+      document.getElementById("temp2").innerHTML=arr[4];
+      document.getElementById("temp3").innerHTML=arr[5];
+      document.getElementById("wanted_temp").innerHTML=arr[6];
+      document.getElementById("wanted_temp2").innerHTML=arr[7];
+      document.getElementById("pot_percent").innerHTML=arr[8];
+      document.getElementById("servo_percent").innerHTML=arr[9];
+      document.getElementById("light_level").innerHTML=arr[10];
+      
+    }
+  };
+  xhttp.open("GET", "getData", true);
+  xhttp.send();
+}
+
+function getParameters() {
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      console.log(this.responseText);
+      var arr=this.responseText.split("|");
+      document.getElementById("k1").value=arr[0];
+      document.getElementById("k2").value=arr[1];
+      document.getElementById("k3").value=arr[2];
+      document.getElementById("k4").value=arr[3];
+      document.getElementById("k5").value=arr[4];
+      document.getElementById("k6").value=arr[5];
+      document.getElementById("loaded").innerHTML="loaded";
+      setTimeout(() => {  document.getElementById("loaded").innerHTML=""; }, 500);
+      pageUpdate();
+    }
+  };
+  xhttp.open("GET", "getParams", true);
+  xhttp.send();
+}
+
+function loadParameters() {
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      console.log(this.responseText);
+      var arr=this.responseText.split("|");
+      document.getElementById("k1").value=arr[0];
+      document.getElementById("k2").value=arr[1];
+      document.getElementById("k3").value=arr[2];
+      document.getElementById("k4").value=arr[3];
+      document.getElementById("k5").value=arr[4];
+      document.getElementById("k6").value=arr[5];
+      document.getElementById("loaded").innerHTML="loaded";
+      setTimeout(() => {  document.getElementById("loaded").innerHTML=""; }, 500);
+      pageUpdate();
+    }
+  };
+  xhttp.open("GET", "loadParams", true);
+  xhttp.send();
+}
+
+function setParameters(one,two,three,four,five,six) {
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      console.log(this.responseText);
+      document.getElementById("updated").innerHTML="upd";
+    setTimeout(() => {  document.getElementById("updated").innerHTML=""; }, 500);
+    }
+  };
+  xhttp.open("GET", "setParams?one="+one+"&two="+two+"&three="+three+"&four="+four+"&five="+five+"&six="+six, true);
+  step=step+1;
+  xhttp.send();
+}
+
+function saveParameters() {
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      console.log(this.responseText);
+      document.getElementById("saved").innerHTML="saved";
+      setTimeout(() => {  document.getElementById("saved").innerHTML=""; }, 500);
+      }
+    };
+  xhttp.open("GET", "saveParams", true);
+  xhttp.send();
+}
+
+function pageUpdate(){
+  let form = document.forms.k_form;
+  let elem1 = form.elements.k1;
+  let elem2 = form.elements.k2;
+  let elem3 = form.elements.k3;
+  form = document.forms.k_form2;
+  let elem4 = form.elements.k4;
+  let elem5 = form.elements.k5;
+  let elem6 = form.elements.k6;
+  form = document.forms.d_form;
+  console.log(elem1.value+" "+elem2.value+" "+elem3.value+" "+elem4.value+" "+elem5.value+" "+elem6.value);
+  console.log("should update: "+shouldUpdate);
+  getData();
+  if(shouldUpdate)
+  {
+  setParameters(elem1.value,elem2.value,elem3.value,elem4.value,elem5.value,elem6.value);
+  }
+  setTimeout(pageUpdate, 1000);
+}
+
+var x = document.getElementById("myBtnSave");
+x.addEventListener("click", saveParameters);
+x.addEventListener('touchstart', saveParameters);
+
+var xx = document.getElementById("myBtnLoad");
+xx.addEventListener("click", loadParameters);
+xx.addEventListener('touchstart', loadParameters);
+pageUpdate();
+
+
+</script>
+
+</body>
+</html>
+)=====";
