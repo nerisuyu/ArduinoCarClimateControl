@@ -165,8 +165,8 @@ clear: both;
 
 <div style="width: 50%; margin: 0 auto;" class="flx">
 
-      <div class ="row">
-        <div class ="column">
+      
+        
         <form name="k_form">
           <text  fill="#777" class="title2" >k1 Допуск</text>
           <input type="text" name="k1" id="k1" value="1" class="big"><br>
@@ -175,19 +175,16 @@ clear: both;
           <text  fill="#777" class="title2" >k3 Задержка</text>
           <input type="text" name="k3" id="k3" value="3" class="big"><br>
           </form>
-        </div>
-
-        <div class ="column">
+        
         <form name="k_form2">
-          <text  fill="#777" class="title2" >k4</text>
+          <text  fill="#777" class="title2" >k4 Световой порог на температуру</text>
           <input type="text" name="k4" id="k4" value="4" class="big"><br>
-          <text  fill="#777" class="title2" >k5</text>
+          <text  fill="#777" class="title2" >k5 Зависимость от уличной t</text>
           <input type="text" name="k5" id="k5" value="5" class="big"><br>
-          <text  fill="#777" class="title2" >k6</text>
+          <text  fill="#777" class="title2" >k6 включать ли фары 1/0</text>
           <input type="text" name="k6" id="k6" value="6" class="big"><br>
           </form>
-        </div>
-      </div>
+        
 
 
 
@@ -300,7 +297,7 @@ function setParameters(one,two,three,four,five,six) {
     setTimeout(() => {  document.getElementById("updated").innerHTML=""; }, 500);
     }
   };
-  xhttp.open("GET", "setParams?one="+one+"&two="+two+"&three="+three+"&four="+four+"&five="+five+"&six="+six, true);
+  xhttp.open("GET", "setParams?k1="+one+"&k2="+two+"&k3="+three+"&k4="+four+"&k5="+five+"&k6="+six, true);
   step=step+1;
   xhttp.send();
 }

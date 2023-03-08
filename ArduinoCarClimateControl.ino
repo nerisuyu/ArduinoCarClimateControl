@@ -22,7 +22,7 @@
 
 #define IN1 D7 //сигнал от генератора о вращении двигателя 
 #define OUT1 D5 //включение фар ближнего света
-int engine_timer=0;
+
 
 
 #define SCREEN_WIDTH 128
@@ -30,11 +30,15 @@ int engine_timer=0;
 #define OLED_RESET LED_BUILTIN  //4 
 
 #define POT_ARR_SIZE 5 //размер массива для сглаживания значений потенциометра
-#define POT_GATE 4
-#define POT_GATE2 5
+#define POT_RAPID_MOVEMENT_GATE 4 //порог считывания "резкого" поворота потенциометра
+
 
 #define DELAY 0
+#define SERVO_MOVEMENT_DELAY 20000
+#define DERIVATIVE_CALCULATION_DELAY 2000 //интервал вычисления производных
 #define TEMP_MEASUREMENT_DELAY 750
+#define LIGHT_MEASUREMENT_DELAY 1500  //интервал измерения света
+#define IGNITION_PROCESSING_DELAY 3000  //интервал обработки сигнала с зажигания
 
 
 ////////адреса в памяти////////
@@ -49,18 +53,26 @@ int engine_timer=0;
 #define APPSK  "sochi2014"
 #endif
 
-#define SERVER_DEBUG 0  //отладочные сообщения сервера
-#define TEMP_DEBUG 0     //отладочные сообщения температур
-#define DERIVATIVE_DEBUG 0  //отладочные сообщения производных
-#define SERVO_DEBUG 0
-#define LIGHT_DEBUG 0
-#define ENGINE_DEBUG 0
+#define TIMER_DEBUG 1       //о скорости работы
+#define SERVER_DEBUG 0      //сервера
+#define TEMP_DEBUG 1       //температур
+#define DERIVATIVE_DEBUG 0  //вычисления производных
+#define SERVO_DEBUG 0       //серво
+#define LIGHT_DEBUG 0       //измерения света
+#define IGNITION_DEBUG 0    //зажигания
+#define POT_DEBUG 0         //потенциометра
+
+#define SUN_TEMPERATURE 5
+#define LIGHT_ARR_SIZE 3
+
 
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 BH1750 lightMeter;
 float light_reading=0;
+int additional_light_temperature=0;
+float light_reading_smooth=0;
 
 OneWire oneWire(THERMO_PIN);
 DallasTemperature sensors(&oneWire);
@@ -81,43 +93,33 @@ int temperature_k=0;
 float temperature1_derivative1=0; //первая производная температуры1
 float temperature1_derivative2=0; //вторая производная температуры1
 float estimated_temperature_1=0;
-boolean is_sensor_reading=0;
-
 
 Servo my_servo; // create servo object to control a servo
 
-int pot_smoothing_array[POT_ARR_SIZE]= { 0 };
-int pot_smoothing_array_cursor = 0;
-int pot_pos_new=0;
-int pot_pos_percent=0;
-int pot_pos_current=0; 
-int pot_pos_min=0;
-int pot_pos_max=1024;
-
-int pot_center_percent=0;
+int pot_real_percent=0;
+int pot_smooth_percent=0;
+const int pot_pos_min=0;
+const int pot_pos_max=1024;
 
 
 
-
-boolean is_servo_attached = 0;
-int servo_pos_new = 0;      
-int servo_pos_current = 0;
+int servo_pos_current=0;
 int servo_pos_percent=0; 
 int servo_pos_min=1500;   // границы поворота серво
 int servo_pos_max=2380;   //
-int servo_move_delay=20000;
+
 
 //pid_ parameters
-int k1=0; 
-int k2=0;
-int k3=0;
-int k4=0;
+int k1=0; // допуск
+int k2=0; //  шаг 
+int k3=0; // задержка мс
+int k4=0; // light threshold
 int k5=0;
-int k6=0;
-int derivative_delay =2000; //интервал вычисления производных
-int light_delay =1500; //интервал измерения света
-int engine_delay=3000; //интервал обработки сигнала с двигателя
-float integral=0;
+int k6=1;
+int k7=0;
+int k8=0;
+int k9=0;
+
 int set_request_current_step=0;
 
 
@@ -194,12 +196,6 @@ void findSensors(){
 
 void setupPot(){
   pinMode(POT_PIN, INPUT);
-  EEPROM.get(EEPROM_POT,pot_pos_current); //????????????????????????????????????????
-  for(int i=0;i < POT_ARR_SIZE;i++){
-    pot_smoothing_array[i]=pot_pos_current;
-    }
-  pot_pos_percent=100*(pot_pos_current-pot_pos_min)/(pot_pos_max-pot_pos_min);
-  pot_center_percent=pot_pos_percent;
 }
 
 void setup(){
@@ -248,6 +244,12 @@ void print_k()
   Serial.print(k5);
   Serial.print(" k6 ");
   Serial.print(k6);
+  Serial.print(" k7 ");
+  Serial.print(k7);
+  Serial.print(" k8 ");
+  Serial.print(k8);
+  Serial.print(" k9 ");
+  Serial.print(k9);
   Serial.println("");
 }
 
@@ -259,6 +261,7 @@ void save_k()
   EEPROM.put(EEPROM_PID+3*sizeof(int),k4);
   EEPROM.put(EEPROM_PID+4*sizeof(int),k5);
   EEPROM.put(EEPROM_PID+5*sizeof(int),k6);
+  
   EEPROM.commit();
   if(SERVER_DEBUG){
     Serial.println("Saved k");
@@ -282,32 +285,22 @@ void load_k()
  
 ////////////////////////
 void measure_temperature(){ //измерение температур
-  static int last_measurement_time=0;
+  static int prev_time=0;
   int current_time=millis();
-  if(current_time-last_measurement_time>=TEMP_MEASUREMENT_DELAY)
+  if(current_time-prev_time>=TEMP_MEASUREMENT_DELAY)
   {
+    prev_time=current_time;
     if(TEMP_DEBUG)
     {
-      Serial.println("temp measurement");
+      Serial.println("temperature measurement:");
     }
-    
-    last_measurement_time=current_time;
-    
+    /*  //медленный способ, виснет на 700мс
     measured_temperature_1=sensors.getTempC(sensor_1);
     measured_temperature_2=sensors.getTempC(sensor_2);
     measured_temperature_3=sensors.getTempC(sensor_3);
-
-    if(TEMP_DEBUG){
-      Serial.print("measured t: ");
-      Serial.print(measured_temperature_1);
-      Serial.print(" ");
-      Serial.print(measured_temperature_2);
-      Serial.print(" ");
-      Serial.println(measured_temperature_3);
-    }
-
     sensors.requestTemperatures();
-    /*oneWire.reset();
+    */
+    oneWire.reset();
     oneWire.select(sensor_1);    
     oneWire.write(0xBE); // Read Scratchpad (чтение регистров)  
     measured_temperature_1 =  oneWire.read() | (oneWire.read()<<8);  //чтение два раза по 8 бит
@@ -328,24 +321,25 @@ void measure_temperature(){ //измерение температур
     //measured_temperature_3=((measured_temperature_3*10)>>4)/10;
     measured_temperature_3=measured_temperature_3/16;
 
+    oneWire.reset();  // сброс шины
+    oneWire.write(0xCC);//обращение ко всем датчикам
+    oneWire.write(0x44);// начать преобразование (без паразитного питания)  
 
-
+    if(TEMP_DEBUG){
+      Serial.print("measured t: ");
+      Serial.print(measured_temperature_1);
+      Serial.print(" ");
+      Serial.print(measured_temperature_2);
+      Serial.print(" ");
+      Serial.println(measured_temperature_3);
+    }
     //EEPROM.put(EEPROM_THERMO,measured_temperature_1);
     //EEPROM.put(EEPROM_THERMO+sizeof(int),measured_temperature_2);
     //EEPROM.put(EEPROM_THERMO+2*sizeof(int),measured_temperature_3);
     //EEPROM.commit();
-
-    
-
-
-    oneWire.reset();  // сброс шины
-        oneWire.write(0xCC);//обращение ко всем датчикам
-        oneWire.write(0x44);// начать преобразование (без паразитного питания)  
-    */
-
-  } 
-  
+  }
 }
+
 void process_temperature(){ //нахождение приближенной температуры
   static int prev_time=millis();                    //время последнего измерения
   static float prev_value1=measured_temperature_1;   //последнее измерение  
@@ -355,7 +349,7 @@ void process_temperature(){ //нахождение приближенной те
   static int time_to_rest=0;
 
   //if(measured_temperature_1! prev_value)  //измерение по изменению
-  if(timer>derivative_delay)                  //измерение по интервалу
+  if(timer>DERIVATIVE_CALCULATION_DELAY)                  //измерение по интервалу
   {
     temperature1_derivative1=1000*(measured_temperature_1 -prev_value1)/(current_time-prev_time); // градусы в секунду
     temperature1_derivative2=1000*(temperature1_derivative1-prev_value2)/(current_time-prev_time);
@@ -376,7 +370,7 @@ void process_temperature(){ //нахождение приближенной те
           Serial.print(" last time ");
           Serial.print(prev_time);
           Serial.print(" delay ");
-          Serial.println(derivative_delay);
+          Serial.println(DERIVATIVE_CALCULATION_DELAY);
         }
     
     prev_value1=measured_temperature_1;
@@ -398,14 +392,15 @@ void process_temperature(){ //нахождение приближенной те
 
 void process_engine(){
   static int prev_time=millis();                    //время последнего измерения
+  static int engine_timer=0;
   int current_time=millis();
   int timer=current_time-prev_time;      
 
-  if(timer>engine_delay)                  //измерение по интервалу
+  if(timer>IGNITION_PROCESSING_DELAY)                  //измерение по интервалу
   {
     prev_time=current_time;  
     int in1=digitalRead(IN1);
-     if (in1)
+     if (in1 && k6)
       {
       if (millis()-engine_timer>1000){
         digitalWrite(OUT1, HIGH);
@@ -415,14 +410,11 @@ void process_engine(){
         engine_timer=millis();
         digitalWrite(OUT1, LOW);
     }
-    if(ENGINE_DEBUG){
+    if(IGNITION_DEBUG){
       Serial.print("input: ");
       Serial.println(in1);
     }
   }
-
-  
- 
 }
 void process_light(){ 
   static int prev_time=millis();                    //время последнего измерения
@@ -430,44 +422,53 @@ void process_light(){
   int timer=current_time-prev_time;         //время прошедшее с последнего измерения
 
   //if(measured_temperature_1! prev_value)  //измерение по изменению
-  if(timer>light_delay)                  //измерение по интервалу
+  if(timer>LIGHT_MEASUREMENT_DELAY)                  //измерение по интервалу
   {
     prev_time=current_time;  
     light_reading = lightMeter.readLightLevel();
+    light_reading_smooth=readLightSmooth(light_reading);
+    additional_light_temperature=0;
+    if (light_reading>k4 && k4!=0){
+      additional_light_temperature=SUN_TEMPERATURE;//инсёрт чёто там
+    }
+
     if(LIGHT_DEBUG){
       Serial.print("Light: ");
       Serial.print(  light_reading);
+      Serial.print("Smooth light: ");
+      Serial.print(  light_reading_smooth);
       Serial.println(" lx");
     }
   }
 }
 
+float readLightSmooth(int new_value){
+  static int smoothing_array[LIGHT_ARR_SIZE] = {0};
+  static int cursor = 0;
+  float smooth_value=0; 
+  smoothing_array[cursor] = new_value;
+  cursor = (cursor + 1) % LIGHT_ARR_SIZE;  //увеличение на 1 и округление до размеров массива
+  for(int i=0;i < LIGHT_ARR_SIZE;i++){
+    smooth_value+=smoothing_array[i];
+    if(LIGHT_DEBUG){
+     Serial.print(smoothing_array[i]);
+    Serial.print(" ");
+    }
+  }
+  if(LIGHT_DEBUG) Serial.print(" ");
+  return smooth_value/LIGHT_ARR_SIZE;
+}
+
 void moveServo(){
   static int prev_time=millis();
+  static bool is_servo_attached=0;
   int current_time=millis();
-  
 
-  servo_pos_new=map(servo_pos_percent,0,100,servo_pos_min,servo_pos_max);
+  int servo_pos_new=map(servo_pos_percent,0,100,servo_pos_min,servo_pos_max);
   EEPROM.put(EEPROM_SERVO,servo_pos_new);
   EEPROM.commit();
-  
-  if(SERVO_DEBUG){
-  Serial.print("moveServo: ");
-  Serial.print(servo_pos_new);
-  Serial.print(" ");
-  Serial.print(servo_pos_current);
-  Serial.print(" ");
-  Serial.print(servo_pos_percent);
-  Serial.print(" ");
-  Serial.print(pot_pos_percent);
-  Serial.print(" ");
-  Serial.print(servo_pos_min);
-  Serial.print(" ");
-  Serial.print(servo_pos_max);
-  Serial.println(" | ");
-  }
 
-  if(servo_pos_new!=servo_pos_current || current_time-prev_time>=servo_move_delay)  
+  if(servo_pos_new!=servo_pos_current || current_time-prev_time>=SERVO_MOVEMENT_DELAY)  
   {
     if(SERVO_DEBUG){Serial.println(" servo update ");}
     prev_time=current_time;
@@ -490,32 +491,53 @@ void moveServo(){
       if(SERVO_DEBUG){Serial.println(" servo detached ");}
     }
   }
+  if(SERVO_DEBUG){
+    Serial.print("moveServo: ");
+    Serial.print(servo_pos_new);
+    Serial.print(" ");
+    Serial.print(servo_pos_current);
+    Serial.print(" ");
+    Serial.print(servo_pos_percent);
+    Serial.print(" ");
+    Serial.print(servo_pos_min);
+    Serial.print(" ");
+    Serial.print(servo_pos_max);
+    Serial.println(" | ");
+  }
 }
 
-void readPotSmooth(){
-  pot_pos_new=0;
-  pot_smoothing_array[pot_smoothing_array_cursor] =analogRead(POT_PIN);
-  pot_smoothing_array_cursor=(pot_smoothing_array_cursor+1)% POT_ARR_SIZE;  //увеличение на 1 и округление до размеров массива
-  for(int i=0;i < POT_ARR_SIZE;i++){
-    pot_pos_new+=pot_smoothing_array[i];
-  //  Serial.print(pot_smoothing_array[i]);
-  //  Serial.print(" ");
-  }
-  pot_pos_new=pot_pos_new/POT_ARR_SIZE;
-  //Serial.print("  Average: ");
-  //Serial.print(pot_pos_new);
-  //Serial.print(" Old: ");
-  //Serial.print(pot_pos_current);
-  //Serial.print("\n");
+void process_pot()
+{
+  float pot_real = analogRead(POT_PIN);
+  float pot_smooth = readPotSmooth(pot_real);
+  pot_real_percent=100*(pot_real-pot_pos_min)/(pot_pos_max-pot_pos_min);
+  pot_smooth_percent=100*(pot_smooth-pot_pos_min)/(pot_pos_max-pot_pos_min);
 
-  if(abs(pot_pos_current-pot_pos_new)>=POT_GATE)
-  {
-    pot_pos_current=pot_pos_new;
-    EEPROM.put(EEPROM_POT,pot_pos_current);
-    EEPROM.commit();
+  if(POT_DEBUG){
+      Serial.print("\t");
+      Serial.print("pot real: ");
+      Serial.print(pot_real_percent);
+      Serial.print("pot smooth: ");
+      Serial.print(pot_smooth_percent);
+      Serial.println("");
+    }
+}
+
+float readPotSmooth(int new_value){
+  static int smoothing_array[POT_ARR_SIZE] = {0};
+  static int cursor = 0;
+  float smooth_value=0; 
+  smoothing_array[cursor] = new_value;
+  cursor = (cursor + 1) % POT_ARR_SIZE;  //увеличение на 1 и округление до размеров массива
+  for(int i=0;i < POT_ARR_SIZE;i++){
+    smooth_value+=smoothing_array[i];
+    if(POT_DEBUG){
+     Serial.print(smoothing_array[i]);
+    Serial.print(" ");
+    }
   }
-  pot_pos_percent=100*(pot_pos_current-pot_pos_min)/(pot_pos_max-pot_pos_min);
-  //Serial.println(pot_pos_percent);
+  if(POT_DEBUG) Serial.print(" ");
+  return smooth_value/POT_ARR_SIZE;
 }
 
 ///HANDLERS////////
@@ -548,9 +570,9 @@ void handleDataGetRequest(){
                               +String(measured_temperature_3)+"|"
                               +String(salon_temperature_wanted)+"|"
                               +String(stream_temperature_wanted)+"|"
-                              +String(pot_pos_percent)+"|"
+                              +String(pot_real_percent)+"|"
                               +String(servo_pos_percent)+"|"
-                              +String(light_reading));
+                              +String(light_reading_smooth));
 }
 
 void handleParametersSetRequest(){
@@ -558,12 +580,13 @@ void handleParametersSetRequest(){
   if(request_step>=set_request_current_step)  //запросы, дошедшие с опозданием игнорируются
   {
     set_request_current_step=request_step;
-    k1 = server.arg("one").toInt();
-    k2 = server.arg("two").toInt();
-    k3 = server.arg("three").toInt();
-    k4 = server.arg("four").toInt();
-    k5 = server.arg("five").toInt();
-    k6 = server.arg("six").toInt();
+    k1 = server.arg("k1").toInt();
+    k2 = server.arg("k2").toInt();
+    k3 = server.arg("k3").toInt();
+    k4 = server.arg("k4").toInt();
+    k5 = server.arg("k5").toInt();
+    k6 = server.arg("k6").toInt();
+    
     //derivative_delay = server.arg("four").toInt();
     server.send(200, "text/plane","");
     if(SERVER_DEBUG){
@@ -602,6 +625,7 @@ void handleParametersLoadRequest(){
 ///////////////////////////////////////////
 
 int computePID(float input, float setpoint, float kp, float ki, float kii, float kd, float dt, int minOut, int maxOut) {
+  static float integral=0;
   kp=kp/100;
   ki=ki/100;
   kd=kd/100;
@@ -618,139 +642,72 @@ int computePID(float input, float setpoint, float kp, float ki, float kii, float
 }
 
 float step_by_step_search( float prev_servo_value, float current_temperature, float wanted_temperature, float temp_error ,float step_size, long delay){
-  
-  /*
-  Serial.print("prev ");
-  Serial.print(prevMoveTime);
-  Serial.print(" ");
-  Serial.print("current ");
-  Serial.print(millis());
-  Serial.print(" ");
-  Serial.print("delay ");
-  Serial.print(delay);
-  Serial.print("    ");
-  Serial.print("wanted ");
-  Serial.print(wanted_temperature);
-  Serial.print(" ");
-  Serial.print("current ");
-  Serial.print(current_temperature);
-  Serial.print("   ");
-  Serial.print("err ");
-  Serial.print(temp_error);
-  Serial.print(" ");
-
-  */
-    current_delta=abs(wanted_temperature-current_temperature);
+    static long prevMoveTime=millis();
+    static int prev_delta=0;
+    int current_delta=abs(wanted_temperature-current_temperature);
     if(current_delta>temp_error){
-      /*
-      Serial.print("delta");
-      Serial.print(wanted_temperature-current_temperature);
-      Serial.print(" ");
-      */
       if(millis()-prevMoveTime>delay){
-        /*
-        Serial.print("Prev_Delta");
-        Serial.print(prev_delta);
-        Serial.print(" ");
-        */
         if(current_delta>=prev_delta){
           prevMoveTime=millis();
           prev_delta=current_delta;
-          //Serial.print("upd");
           return constrain(prev_servo_value+sign(wanted_temperature-current_temperature)*constrain(current_delta-1,1,step_size),0,100); 
         }
       }
-      else
-      { 
+      else{ 
         return prev_servo_value;
       }
   }
-  else
-      { 
+  else{ 
         return prev_servo_value;
       }
 }
 
 void loop(){
-  Serial.println("--------tick-------");
+  if(TIMER_DEBUG){  //Вычисление времени, потраченного на последний loop()
+    static int timer=0;
+    Serial.print("frame time: ");
+    Serial.println(millis()-timer);
+    timer=millis();
+  }
   server.handleClient();
+
+  process_pot();
+
   measure_temperature();
-  readPotSmooth();
-  
-  salon_temperature_wanted = map(pot_pos_percent,0,100,salon_temperature_wanted_min,salon_temperature_wanted_max);
-
-  stream_temperature_wanted = salon_temperature_wanted;//+temperature_k*( temperature_equality_point-measured_temperature_2);
-
   process_temperature();
+
   process_light();
   process_engine();
-  //в крайнем положении должен игнорировать пид и просто выставлят
-  //добавить ипром на серво
   
-  if (pot_pos_percent>93){
+  salon_temperature_wanted = map(pot_smooth_percent,0,100,salon_temperature_wanted_min,salon_temperature_wanted_max);
+
+  stream_temperature_wanted = salon_temperature_wanted-additional_light_temperature+k5*( temperature_equality_point-measured_temperature_2)/100;
+
+  if (pot_real_percent>93){
     salon_temperature_wanted=salon_temperature_wanted_max;
     servo_pos_percent=100;
   }
-  else
-  {
-    if (pot_pos_percent<7){
+  else{
+    if (pot_real_percent<7){
       salon_temperature_wanted=salon_temperature_wanted_min;
-    servo_pos_percent=0;
-  }
-  else
-    {
+      servo_pos_percent=0;
+    }
+    else{
       if(measured_temperature_1>200 || k1==0){ //мануальный режим при первом коэффициенте ==0 либо нерабочем датчике
-        servo_pos_percent=pot_pos_percent;
-        }
-      else
-      {
-        if(abs(pot_pos_percent-pot_center_percent)>POT_GATE2){
-            if(sign(pot_pos_percent-pot_center_percent)==sign(pot_pos_percent-servo_pos_percent)){  //резко двигаем серво на новую позицию только если это будет движение в нужном направлении
-              servo_pos_percent=pot_pos_percent;
+        servo_pos_percent=pot_smooth_percent;
+      }
+      else{
+        if(abs(pot_real_percent-pot_smooth_percent)>POT_RAPID_MOVEMENT_GATE){
+          if(sign(pot_real_percent-pot_smooth_percent)==sign(pot_real_percent-servo_pos_percent)){  //резко двигаем серво на новую позицию только если это будет движение в нужном направлении
+            servo_pos_percent=pot_real_percent;
             }
-            pot_center_percent=pot_pos_percent;
-              }
-        else
-        {
-            servo_pos_percent=step_by_step_search(servo_pos_percent,measured_temperature_1,stream_temperature_wanted, k1, k2, k3);
-            //Serial.print(servo_pos_percent);
+          }
+        else{
+          servo_pos_percent=step_by_step_search(servo_pos_percent,measured_temperature_1,stream_temperature_wanted, k1, k2, k3);
+          //servo_pos_percent=computePID(measured_temperature_1,salon_temperature_wanted, k1, k2, 1 ,k3, DELAY, 0, 100);
         }
-        //servo_pos_percent=computePID(measured_temperature_1,salon_temperature_wanted, k1, k2, 1 ,k3, DELAY, 0, 100);
       }
     }
   }
-  
-  //servo_pos_percent=pot_pos_percent;
-
-  moveServo();    
-
-  /*
-  display.clearDisplay(); 
-  
-  displayTemperature(&display,0,0,1,measured_temperature_1);
-  displayTemperature(&display,40,0,1,measured_temperature_2);
-  displayTemperature(&display,80,0,1,measured_temperature_3);
-  
-  displayText(&display,00,10,1,"min");
-  displayText(&display,20,10,1,servo_pos_min);
-  
-  displayText(&display,70,10,1,"max");
-  displayText(&display,90,10,1,servo_pos_max);
-
-  displayText(&display,0,20,1,"%");
-  displayText(&display,25,20,1,pot_pos_percent);
-
-  displayText(&display,0,30,1,"abs");
-  displayText(&display,25,30,1,servo_pos_current);
-
-  displayText(&display,0,40,1,k1);
-  displayText(&display,20,40,1,k2);
-  displayText(&display,40,40,1,k3);
-
-  displayText(&display,40,45,1,"");
-  display.print(my_ip);
-
-  display.display();
-  delay(DELAY);
-  */
+  moveServo();
 }
