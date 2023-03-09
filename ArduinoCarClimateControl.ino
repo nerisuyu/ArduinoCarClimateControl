@@ -57,7 +57,7 @@
 #define DERIVATIVE_DEBUG 0  //вычисления производных
 #define SERVO_DEBUG 0       //серво
 #define LIGHT_DEBUG 0       //измерения света
-#define IGNITION_DEBUG 0    //зажигания
+#define IGNITION_DEBUG 1    //зажигания
 #define POT_DEBUG 0         //потенциометра
 
 #define SUN_TEMPERATURE 5
@@ -71,6 +71,12 @@ BH1750 lightMeter;
 float light_reading=0;
 int additional_light_temperature=0;
 float light_reading_smooth=0;
+int headlights_threshold=1000;
+
+int ignition_signal=0;
+
+int lights_on_delay=1000;
+int lights_off_delay=3000;
 
 OneWire oneWire(THERMO_PIN);
 DallasTemperature sensors(&oneWire);
@@ -385,15 +391,16 @@ void process_temperature(){ //нахождение приближенной те
 void process_engine(){
   static int prev_time=millis();                    //время последнего измерения
   static int engine_timer=0;
+
   int current_time=millis();
   int timer=current_time-prev_time;      
 
   if(timer>IGNITION_PROCESSING_DELAY)                  //измерение по интервалу
   {
     prev_time=current_time;  
-    int in1=digitalRead(IN1);
-     if (in1 && k6)
-      {
+    ignition_signal=digitalRead(IN1);
+      
+     if (in1){
       if (millis()-engine_timer>1000){
         digitalWrite(OUT1, HIGH);
         }
@@ -401,17 +408,21 @@ void process_engine(){
       else{
         engine_timer=millis();
         digitalWrite(OUT1, LOW);
-    }
+      }
+    
     if(IGNITION_DEBUG){
       Serial.print("input: ");
-      Serial.println(in1);
+      Serial.println(ignition_signal);
     }
+    
   }
 }
 void process_light(){ 
   static int prev_time=millis();                    //время последнего измерения
   int current_time=millis();
   int timer=current_time-prev_time;         //время прошедшее с последнего измерения
+
+  static boolean is_headlight_on=false;
 
   //if(measured_temperature_1! prev_value)  //измерение по изменению
   if(timer>LIGHT_MEASUREMENT_DELAY)                  //измерение по интервалу
@@ -423,6 +434,25 @@ void process_light(){
     if (light_reading>k4 && k4!=0){
       additional_light_temperature=SUN_TEMPERATURE;//инсёрт чёто там
     }
+    headlights_threshold=k6;
+    if (ignition_signal && light_reading < headlights_threshold)
+    {
+      is_headlight_on=true;
+    }
+    else
+    {
+      is_headlight_on=false;
+    }
+
+
+    if (is_headlight_on){
+      //digitalWrite(OUT1, HIGH);
+    }else
+    {
+      //digitalWrite(OUT1, LOW);
+    }
+
+
 
     if(LIGHT_DEBUG){
       Serial.print("Light: ");

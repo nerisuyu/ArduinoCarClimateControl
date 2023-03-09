@@ -181,7 +181,7 @@ clear: both;
           <input type="text" name="k4" id="k4" value="4" class="big"><br>
           <text  fill="#777" class="title2" >k5 Зависимость от уличной t</text>
           <input type="text" name="k5" id="k5" value="5" class="big"><br>
-          <text  fill="#777" class="title2" >k6 включать ли фары 1/0</text>
+          <text  fill="#777" class="title2" >k6 Световой порог на вкл. фар, пока не работает</text>
           <input type="text" name="k6" id="k6" value="6" class="big"><br>
           </form>
         
