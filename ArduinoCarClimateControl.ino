@@ -400,7 +400,7 @@ void process_engine(){
     prev_time=current_time;  
     ignition_signal=digitalRead(IN1);
       
-     if (in1){
+     if (ignition_signal){
       if (millis()-engine_timer>1000){
         digitalWrite(OUT1, HIGH);
         }
