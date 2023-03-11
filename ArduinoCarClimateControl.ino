@@ -303,15 +303,17 @@ void load_k()
     print_k();
   }
 }
-int clip_tt(int val){
-  int value=val;
-  int mask=1 << 11;
-  //printBinary(mask);
-  if ((mask& value)&&1){
-    value-=4096;
-    //value*=-1;
-  }
-  return value;
+
+float readSenor(const uint8_t *sensor){
+  oneWire.reset();
+  oneWire.select(sensor);    
+  oneWire.write(0xBE); // Read Scratchpad (чтение регистров)  
+  short t1 =  oneWire.read()| (oneWire.read()<<8); //чтение два раза по 8 бит 
+  /*int mask=1 << 15;   //если 16тый бит == 1 значит это отрицательное число
+  if ((mask& t1)&&1){
+    t1-=65536;
+  }*/
+  return t1/16.00;//деление на 16, т.к датчик возвращает в виде 16*градус Цельсия 
 }
 ////////////////////////
 void measure_temperature(){ //измерение температур
@@ -331,46 +333,20 @@ void measure_temperature(){ //измерение температур
     sensors.requestTemperatures();
     */
     
-    int mask =1 <<12;
-    oneWire.reset();
-    oneWire.select(sensor_1);    
-    oneWire.write(0xBE); // Read Scratchpad (чтение регистров)  
-    measured_temperature_1 =  oneWire.read() | (oneWire.read()<<8);  //чтение два раза по 8 бит
-    //measured_temperature_1=((measured_temperature_1*10)>>4)/10;       //деление на 16, т.к датчик возвращает в виде 16*градус Цельсия
-    measured_temperature_1=measured_temperature_1/16;
+    measured_temperature_1 = readSenor(sensor_1);
+    measured_temperature_2 = readSenor(sensor_2);
+    measured_temperature_3 = readSenor(sensor_3);
 
     oneWire.reset();
-    oneWire.select(sensor_2);    
-    oneWire.write(0xBE); // Read Scratchpad (чтение регистров)  
-    measured_temperature_2 =  oneWire.read()| (oneWire.read()<<8); 
-    //measured_temperature_2=((measured_temperature_2*10)>>4)/10;
-    measured_temperature_2=measured_temperature_2/16;
-
-    oneWire.reset();
-    oneWire.select(sensor_3);    
-    oneWire.write(0xBE); // Read Scratchpad (чтение регистров)  
-    measured_temperature_3 =  oneWire.read()| (oneWire.read()<<8); 
-    //measured_temperature_3=((measured_temperature_3*10)>>4)/10;
-    measured_temperature_3=measured_temperature_3/16;
-
-    oneWire.reset();  // сброс шины
-    oneWire.write(0xCC);//обращение ко всем датчикам
-    oneWire.write(0x44);// начать преобразование (без паразитного питания)  
-     //printBinary(measured_temperature_3);
-    measured_temperature_1=clip_tt(measured_temperature_1);
-    measured_temperature_2=clip_tt(measured_temperature_2);  
-    measured_temperature_3=clip_tt(measured_temperature_3);
-     //printBinary(measured_temperature_3);
+    oneWire.write(0xCC);
+    oneWire.write(0x44);
     if(TEMP_DEBUG){
       Serial.println("measured t: ");
       Serial.print(measured_temperature_1);
-      //printBinary(measured_temperature_1);
       Serial.print(" ");
       Serial.print(measured_temperature_2);
-      //printBinary(measured_temperature_2);
       Serial.print(" ");
       Serial.println(measured_temperature_3);
-      //printBinary(measured_temperature_3);
     }
   }
 }
