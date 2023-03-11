@@ -168,7 +168,7 @@ clear: both;
       
         
         <form name="k_form">
-          <text  fill="#777" class="title2" >k1 Допуск</text>
+          <text  fill="#777" class="title2" >k1 Допуск, поставить 0 для мануального режима</text>
           <input type="text" name="k1" id="k1" value="1" class="big"><br>
           <text  fill="#777" class="title2" >k2 Шаг</text>
           <input type="text" name="k2" id="k2" value="2" class="big"><br>

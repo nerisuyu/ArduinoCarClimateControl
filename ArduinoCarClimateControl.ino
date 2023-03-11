@@ -52,12 +52,12 @@
 #endif
 
 #define TIMER_DEBUG 0       //о скорости работы
-#define SERVER_DEBUG 1      //сервера
-#define TEMP_DEBUG 0       //температур
+#define SERVER_DEBUG 0      //сервера
+#define TEMP_DEBUG 1       //температур
 #define DERIVATIVE_DEBUG 0  //вычисления производных
 #define SERVO_DEBUG 0       //серво
 #define LIGHT_DEBUG 0       //измерения света
-#define IGNITION_DEBUG 1    //зажигания
+#define IGNITION_DEBUG 0    //зажигания
 #define POT_DEBUG 0         //потенциометра
 
 #define SUN_TEMPERATURE 5
@@ -137,6 +137,25 @@ const char *password = APPSK;
 
 IPAddress my_ip=0;
 ESP8266WebServer server(80);
+
+/////
+void printBinary(int n) {
+    Serial.print(n);
+    Serial.print(": ");
+    unsigned char skipZeros = 1;
+    unsigned int mask = 1 << (sizeof(n) * 8 - 1);
+    while (mask) {
+        unsigned char b = (1 && (n & mask));
+        //if (skipZeros & b) skipZeros = 0;//пропускает нули до первой встреченной еденицы
+        //if (!skipZeros) Serial.print(b);//std::cout << +b;
+        Serial.print(b);
+        mask >>= 1;
+    }
+    Serial.println("");
+}
+
+
+
 
 /////////////////////////SETUP////////////////
 void setupServo(){
@@ -284,7 +303,16 @@ void load_k()
     print_k();
   }
 }
- 
+int clip_tt(int val){
+  int value=val;
+  int mask=1 << 11;
+  //printBinary(mask);
+  if ((mask& value)&&1){
+    value-=4096;
+    //value*=-1;
+  }
+  return value;
+}
 ////////////////////////
 void measure_temperature(){ //измерение температур
   static int prev_time=0;
@@ -296,12 +324,14 @@ void measure_temperature(){ //измерение температур
     {
       Serial.println("temperature measurement:");
     }
-    /*  //медленный способ, виснет на 700мс
-    measured_temperature_1=sensors.getTempC(sensor_1);
+      //медленный способ, виснет на 700мс
+    /*measured_temperature_1=sensors.getTempC(sensor_1);
     measured_temperature_2=sensors.getTempC(sensor_2);
     measured_temperature_3=sensors.getTempC(sensor_3);
     sensors.requestTemperatures();
     */
+    
+    int mask =1 <<12;
     oneWire.reset();
     oneWire.select(sensor_1);    
     oneWire.write(0xBE); // Read Scratchpad (чтение регистров)  
@@ -326,14 +356,21 @@ void measure_temperature(){ //измерение температур
     oneWire.reset();  // сброс шины
     oneWire.write(0xCC);//обращение ко всем датчикам
     oneWire.write(0x44);// начать преобразование (без паразитного питания)  
-
+     //printBinary(measured_temperature_3);
+    measured_temperature_1=clip_tt(measured_temperature_1);
+    measured_temperature_2=clip_tt(measured_temperature_2);  
+    measured_temperature_3=clip_tt(measured_temperature_3);
+     //printBinary(measured_temperature_3);
     if(TEMP_DEBUG){
-      Serial.print("measured t: ");
+      Serial.println("measured t: ");
       Serial.print(measured_temperature_1);
+      //printBinary(measured_temperature_1);
       Serial.print(" ");
       Serial.print(measured_temperature_2);
+      //printBinary(measured_temperature_2);
       Serial.print(" ");
       Serial.println(measured_temperature_3);
+      //printBinary(measured_temperature_3);
     }
   }
 }
