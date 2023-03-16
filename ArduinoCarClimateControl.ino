@@ -53,7 +53,7 @@
 
 #define TIMER_DEBUG 0       //о скорости работы
 #define SERVER_DEBUG 0      //сервера
-#define TEMP_DEBUG 1        //температур
+#define TEMP_DEBUG 0        //температур
 #define DERIVATIVE_DEBUG 0  //вычисления производных
 #define SERVO_DEBUG 0       //серво
 #define LIGHT_DEBUG 0       //измерения света
@@ -380,7 +380,6 @@ void process_temperature() {                          //нахождение п�
     prev_value2 = temperature1_derivative1;
     prev_time = current_time;
     if (sign(temperature1_derivative1) != sign(temperature1_derivative2)) {
-      Serial.print(" ye ");
       time_to_rest = abs(temperature1_derivative1 / temperature1_derivative2);
     } else {
       time_to_rest = 0;
@@ -644,22 +643,65 @@ int computePID(float input, float setpoint, float kp, float ki, float kii, float
 
 float step_by_step_search(float prev_servo_value, float current_temperature, float wanted_temperature, float temp_error, float step_size, long delay) {
   static long prevMoveTime = millis();
-  static int prev_delta = 0;
-  int current_delta = abs(wanted_temperature - current_temperature);
-  if (current_delta > temp_error) {
-    if (millis() - prevMoveTime > delay) {
+  static float prev_delta = 0;
+  static float prev_temperature = current_temperature;
+  float current_delta = abs(wanted_temperature - current_temperature);
+  if (millis() - prevMoveTime > delay) {
+    prev_delta = current_delta;
+    Serial.print("delta ");
+ 
+    Serial.println(current_delta);
+    if (current_delta > 1.5+2*temp_error) {
       if (current_delta >= prev_delta) {
+        Serial.println("move1");
         prevMoveTime = millis();
-        prev_delta = current_delta;
+        prev_temperature=current_temperature;
+        return constrain(prev_servo_value + sign(wanted_temperature - current_temperature) * constrain(current_delta - 1, 1, step_size), 0, 100);
+        }
+      }else{
+        if (current_delta > temp_error) {
+          Serial.println(abs(prev_temperature - current_temperature));
+          if (abs(prev_temperature - current_temperature)<=0.5*temp_error){
+            Serial.println("move2");
+            prevMoveTime = millis();
+            prev_temperature=current_temperature;
+            return constrain(prev_servo_value + sign(wanted_temperature - current_temperature) * constrain(current_delta - 1, 1, step_size), 0, 100);
+          }
+        }
+      }
+      Serial.println("nomove");
+      prevMoveTime = millis();
+      prev_temperature=current_temperature;
+    }
+    
+  return prev_servo_value;
+}
+
+
+/*
+float step_by_step_search(float prev_servo_value, float current_temperature, float wanted_temperature, float temp_error, float step_size, long delay) {
+  static long prevMoveTime = millis();
+  static int prev_temperature=0;
+  int current_delta = abs(wanted_temperature - current_temperature);
+  if (millis() - prevMoveTime > delay) {
+    prevMoveTime = millis();
+    if (current_delta > temp_error) {
+      Serial.print("delta: ");
+      Serial.print(abs(prev_temperature - current_temperature));
+      if (abs(prev_temperature - current_temperature)<=1){
+        Serial.print(" moving ");
+        Serial.println("");
+        prev_temperature=current_temperature;
         return constrain(prev_servo_value + sign(wanted_temperature - current_temperature) * constrain(current_delta - 1, 1, step_size), 0, 100);
       }
-    } else {
-      return prev_servo_value;
+      Serial.println("");
+      prev_temperature=current_temperature;
     }
-  } else {
-    return prev_servo_value;
-  }
+    
+  } 
+  return prev_servo_value;
 }
+*/
 
 void loop() {
 
@@ -707,7 +749,7 @@ void loop() {
             }
           
         } else {
-          servo_pos_percent =                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                step_by_step_search(\servo_pos_percent, measured_temperature_1, stream_temperature_wanted, k1, k2, k3);
+          servo_pos_percent = step_by_step_search(servo_pos_percent, measured_temperature_1, stream_temperature_wanted, k1, k2, k3);
           //servo_pos_percent=computePID(measured_temperature_1,salon_temperature_wanted, k1, k2, 1 ,k3, DELAY, 0, 100);
         }
     }
