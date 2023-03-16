@@ -647,30 +647,44 @@ float step_by_step_search(float prev_servo_value, float current_temperature, flo
   static float prev_temperature = current_temperature;
   float current_delta = abs(wanted_temperature - current_temperature);
   if (millis() - prevMoveTime > delay) {
-    prev_delta = current_delta;
+    
     Serial.print("delta ");
  
     Serial.println(current_delta);
     if (current_delta > 1.5+2*temp_error) {
-      if (current_delta >= prev_delta) {
+      if (current_delta >= prev_delta-1) {
         Serial.println("move1");
         prevMoveTime = millis();
         prev_temperature=current_temperature;
-        return constrain(prev_servo_value + sign(wanted_temperature - current_temperature) * constrain(current_delta - 1, 1, step_size), 0, 100);
+        prev_delta = current_delta;
+        return constrain(prev_servo_value + sign(wanted_temperature - current_temperature) * constrain(current_delta*1 - 1, 1, step_size), 0, 100);
         }
       }else{
         if (current_delta > temp_error) {
           Serial.println(abs(prev_temperature - current_temperature));
           if (abs(prev_temperature - current_temperature)<=0.5*temp_error){
-            Serial.println("move2");
+            Serial.println("move2 ");
+            
             prevMoveTime = millis();
             prev_temperature=current_temperature;
-            return constrain(prev_servo_value + sign(wanted_temperature - current_temperature) * constrain(current_delta - 1, 1, step_size), 0, 100);
+            prev_delta = current_delta;
+            return constrain(prev_servo_value + sign(wanted_temperature - current_temperature) * constrain(current_delta*0.75 - 1, 1, step_size), 0, 100);
+          }
+          else
+          {
+            if ((abs(prev_temperature - current_temperature)>=1*temp_error)&&(current_delta >= prev_delta)){
+              Serial.println("move3");
+            prevMoveTime = millis();
+            prev_temperature=current_temperature;
+            prev_delta = current_delta;
+            return constrain(prev_servo_value + sign(wanted_temperature - current_temperature) * constrain(current_delta*1.5 - 1, 1, step_size), 0, 100);
+            }
           }
         }
       }
       Serial.println("nomove");
       prevMoveTime = millis();
+      prev_delta = current_delta;
       prev_temperature=current_temperature;
     }
     
