@@ -1,228 +1,427 @@
 const char MAIN_page[] PROGMEM = R"=====(
-
 <!DOCTYPE html>
 <html>
 <head>
    <meta charset="utf-8">
+   <meta name="viewport" 
+      content="width=device-width, initial-scale=0.4, maximum-scale=0.4, user-scalable=0"/>
 <title>Climate Control</title>
 </head>
 
 <style>
-.title{
-  vertical-align: middle;
-  margin-top: 50px;
+   :root {
+  --shadow-color:var(--blue-70);
 
-  border: 0px none;
-  background: rgba(0, 0, 0, 0) none repeat scroll 0% 0%;
-  font: normal bold normal 40px Arial;
-  text-align: center;
-  color: rgb(34, 34, 34);
-  padding: 0px;
+  --verdana-font: 'Brush Script MT',sans-serif, Helvetica; 
+  --serif-font: serif;
+  --system-font: system-ui;
+
+  --red: #FC4444;
+  --green: #1DD63B;
+  
+  --black: #0B0C10;
+  --grey30: #202833;
+  --grey60: #46A29F;
+  --grey80:#C5C6C8;
+  --blue: #66c5fc; 
+  --white: #ffffff;
+
+  /*--color1: #3FEEE7;
+  --color2: #55BDCA;
+  --color3: #96CAEF;
+  --color4: #CAFAFE;*/
+  background: var(--grey30);
+}
+*{
+  padding: 0;
+  margin: 0;
+  font-family: var(--system-font) ;
+  font-size: clamp(1.7rem, 2vw,3rem);
+  -webkit-tap-highlight-color: transparent;
 }
 
-.title2{
-  vertical-align: middle;
-  margin-top: 50px;
-
-  border: 0px none;
-  background: rgba(0, 0, 0, 0) none repeat scroll 0% 0%;
-  font: normal bold normal 30px Arial;
-  text-align: center;
-  color: rgb(34, 34, 34);
-  padding: 0px;
+.prevent-select {
+  -webkit-user-select: none; /* Safari */
+  -ms-user-select: none; /* IE 10 and IE 11 */
+  user-select: none; /* Standard syntax */
 }
 
-.value{
-  width: 150px;
-  float: right;
-  border: 1px none;
-  font: normal bold normal 50px Arial;
-  text-align: left;
+html,body{
+    height: 100%;  
 }
 
-
-.container {
-    position: relative;
-    background-color: #eef2ee;
+#app-main{
+  min-height: 0; /* stretch */
+  box-sizing:border-box;
+  align-items: stretch;
+  margin: 5%;
+  background: var(--grey30);
 }
 
-input[type=text], select {
-  width: 100%;
-  padding: 12px 20px;
-  margin: 8px 0;
-  display: inline-block;
-  border: 2px solid #ccc;
-  border-radius: 10px;
+.app-header{
+   padding: 3%;
+   align-self: center;
+   font-size: clamp(2.5rem, 2vw,3rem);
+   font-family: serif;
+   text-shadow: 0px 0px 10px var(--blue);
+}
+
+.indicators-list{
+  
+   width: 100%;
   box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;  /* horisontal list continues downwards */
+  align-items: start; 
+  flex-shrink:1;
 }
 
-input[type=submit] {
+.indicators-list_item{
+
+  width: 48%;
+  box-sizing: border-box;
+  vertical-align: middle;
+  padding: 0.5% 2vw;
+  margin: 0.5% 1%;
+  border: 0px solid var(--black);
+  border-radius: 1vw;
+}
+
+.indicator_title{
+   width: 50%;
+   height: 100%;
+}
+.indicator_value{
+   vertical-align: baseline;
+   width: 50%;
+   height: 100%
+}
+
+.inputs-list{
+width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;  /* horisontal list continues downwards */
+  align-items: start; 
+  flex-shrink:1;
+}
+
+.inputs-list_item{
+   width: 100%;
+   box-sizing: border-box;
+   align-items: center;
+   padding: 0.5% 2vw;
+   margin: 0.5% 1%;
+   display: flex;
+   
+   border: 0px solid var(--black);
+   border-radius: 1vw;
+}
+
+.input_title{
+   width: 70%;
+}
+
+.input_field{
+   width: 15%;
+   margin-left: auto; 
+   margin-right: 0;
+   
+}
+
+input[type=text] {
+  box-sizing: border-box;
+  border: 1px solid var(--black);
+  border-radius: 1vw;
+  background-color: var(--white);
+  color: var(--grey30);
+  
+  text-align: center;
+}
+
+.button-row{
+  display: flex;
   width: 100%;
-
-  background-color: #4CAFff;
-  color: white;
-  padding: 14px 20px;
-  margin: 8px 0;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-}
-
-input[type=submit]:hover {
-  background-color: #45a000;
-}
-
-div {
-  border-radius: 5px;
-  margin: 20px
+  
+  column-gap: 2%;
+  align-items: center;
+  margin: 2% 0%;
+  
 
 }
 
+.button-row_item{
 
-.column{
-float: left;
-width: 40%;
 }
-
-.row:after{
-content "";
-display: table;
-clear: both;
-}
-
-.big
-{
-    height:80px;
-    font-size:30px;
-}
-
-.button {
-    border: 0;
-    line-height: 1.5;
-    padding: 0 20px;
-    font-size: 3rem;
-    text-align: center;
-    color: #333;
-    text-shadow: 1px 1px 1px #000;
-    border-radius: 10px;
-    background-color: rgba(f, f, f, 1);
-    background-image: linear-gradient(to top left,
-                                      rgba(1, 0, 0, .2),
-                                      rgba(0, 1, 0, .2) 30%,
-                                      rgba(0, 0, 1, 0));
-    box-shadow: inset 2px 2px 3px rgba(255, 255, 255, .6),
-                inset -2px -2px 3px rgba(0, 0, 0, .6);
+.button{
+   
+   cursor: pointer;
+   border-radius: 1dvb;
+   
+   width: 100%;
+   height: 12vw;;
+   text-align: center;
+   align-items: center;
+   display: grid;
+   
 }
 
 
 
+.save-button{
+    background-color: var(--red);
+    box-shadow: 0px 0px 5px var(--red);
+    border-color: var(--red);
+    transition: box-shadow 0.5s ease-in-out;
+}
+.save-button.clicked{
+    box-shadow: 0px 0px 50px var(--red);
+    transition: box-shadow 0s ease-in-out;
+}
 
-.button:active {
-    box-shadow: inset -2px -2px 3px rgba(255, 255, 255, .6),
-                inset 2px 2px 3px rgba(0, 0, 0, .6);
+.load-button{
+    background-color: var(--red);
+    box-shadow: 0px 0px 5px var(--red);
+    border-color: var(--red);
+    transition: box-shadow 0.5s ease-in-out;
+}
+.load-button.clicked{
+    box-shadow: 0px 0px 50px var(--red);
+    transition: box-shadow 0s ease-in-out;
+}
+
+.set-button{
+    background-color: var(--blue);
+    box-shadow: 0px 0px 5px var(--blue);
+    border-color: var(--blue);
+    transition: box-shadow 0.5s ease-in-out;
+}
+.set-button.clicked{
+    box-shadow: 0px 0px 50px var(--blue);
+    transition: box-shadow 0s ease-in-out;
+}
+
+.get-button{
+    background-color: var(--blue);
+    box-shadow: 0px 0px 5px var(--blue);
+    border-color: var(--blue);
+    transition: box-shadow 0.5s ease-in-out;
+}
+.get-button.clicked{
+   box-shadow: 0px 0px 50px var(--blue);
+   transition: box-shadow 0s ease-in-out;
+
+}
+
+separator{
+   padding: 1%;
+}
+vseparator{
+   padding: 0% 1%;
+}
+.text{
+   color: var(--white);
+    
+    /*text-shadow: 0px 10px 10px var(--black);*/
+    -webkit-user-select: none; /* Safari */
+    -ms-user-select: none; /* IE 10 and IE 11 */
+    user-select: none; /* Standard syntax */
+}
+
+.k_text{
+   color: var(--red  );
+   
+    /*text-shadow: 0px 10px 10px var(--black);*/
+    -webkit-user-select: none; /* Safari */
+    -ms-user-select: none; /* IE 10 and IE 11 */
+    user-select: none; /* Standard syntax */
+    text-shadow: 0px 0px 80px var(--red);
+}
+
+.number{
+   color: var(--blue);
+   font-size: clamp(1.9rem, 2vw,3rem);
+   text-align: center;
+    /*text-shadow: 0px 10px 10px var(--black);*/
+    -webkit-user-select: none; /* Safari */
+    -ms-user-select: none; /* IE 10 and IE 11 */
+    user-select: none; /* Standard syntax */
+    text-shadow: 0px 0px 120px var(--blue);
 }
 </style>
 
 <body>
+   <main class="app-main">
+      <div class="app-header text ">
+         HONDA CLIMATE CONTROL
+      </div>
+
+      <div class="list indicators-list">
+         
+         <div class="indicators-list_item indicator">
+            <text class="indicator_title text"n>Target salon t:</text>
+            <text id="wanted_temp" class="indicator_value number">122</text>
+         </div>
+
+         <div class="indicators-list_item indicator">
+            <text  class="indicator_title text">Pot percent:</text>
+            <text  id="pot_percent" class="indicator_value number">123</text>
+         </div>
 
 
 
-<div style="width: 75%; margin: 0 auto;" class="container">
-  <div class="label">
-    <text  fill="#777" class="title">Pot percent:</text>
-    <text  fill="#777" id="pot_percent" class="value">123</text>
-  </div>
-  <div class="label">
-    <text  fill="#777" class="title">Wanted salon t:</text>
-    <text  fill="#777" id="wanted_temp" class="value">1222</text>
-  </div>
-  <div class="label">
-    <text  fill="#777" class="title">Salon t3:</text>
-    <text  fill="#777" id="temp3" class="value">1242424</text>
-  </div>
-  <div class="label">
-    <text  fill="#777" class="title">Street t2:</text>
-    <text  fill="#777" id="temp2" class="value">1</text>
-  </div>
-  <div class="label">
-    <text  fill="#777" class="title">Wanted stream t:</text>
-    <text  fill="#777" id="wanted_temp2" class="value">1</text>
-  </div>
-  <div>
-    <text  fill="#777" class="title">Stream t1:</text>
-    <text  fill="#777" id="temp1" class="value ">0</text>
-  </div>
-  <div class="label">
-    <text  fill="#777" class="title">Servo Percent:</text>
-    <text  fill="#777" id="servo_percent" class="value">1</text>
-  </div>
-  <div class="label">
-    <text  fill="#777" class="title">Light level:</text>
-    <text  fill="#777" id="light_level" class="value">1</text>
-  </div>
+         <div class="indicators-list_item indicator">
+            <text class="indicator_title text">Salon t:</text>
+            <text id="temp3" class="indicator_value number">124</text>
+         </div>
 
-</div>
+         <div class="indicators-list_item indicator">
+            <text class="indicator_title text">Street t:</text>
+            <text id="temp2" class="indicator_value number">1</text>
+         </div>
 
-<div style="width: 50%; margin: 0 auto;" class="flx">
 
+         <div class="indicators-list_item indicator">
+            <text class="indicator_title text">Target stream t:</text>
+            <text id="wanted_temp2" class="indicator_value number">1</text>
+         </div>
+
+         <div class="indicators-list_item indicator">
+            <text class="indicator_title text">Light level:</text>
+            <text id="light_level" class="indicator_value number">1</text>
+         </div>
+
+
+         <div class="indicators-list_item indicator">
+            <text class="indicator_title text">Stream t:</text>
+            <text id="temp1" class="indicator_value number">0</text>
+         </div>
+
+         <div class="indicators-list_item indicator">
+            <text class="indicator_title text">Servo Percent:</text>
+            <text id="servo_percent" class="indicator_value number">1</text>
+         </div>
+
+      </div>
+
+      <separator></separator>
+
+      <form class="list inputs-list" name="k_form">
+         <div class="inputs-list_item">
+            <div class="input_title">
+              <text  fill="#777" class="k_text" >k1</text>
+              <text  fill="#777" class="text" >Допуск, 0 для мануального режима</text>
+            </div>
+
+            <input type="text" name="k1" id="k1" value="1" class="input_field"><br>
+         </div>
+
+         <div class="inputs-list_item">
+            <div class="input_title">
+               <text  fill="#777" class="k_text" >k2</text>
+               <text  fill="#777" class="text" >Шаг</text>
+            </div>
+            <input type="text" name="k2" id="k2" value="2" class="input_field"><br>
+         </div>
+
+         <div class="inputs-list_item">
+            <div class="input_title">
+               <text  fill="#777" class="k_text" >k3</text>
+               <text  fill="#777" class="text" >Задержка</text>
+            </div>
+            <input type="text" name="k3" id="k3" value="3" class="input_field"><br>
+         </div>
+
+         <div class="inputs-list_item">
+            <div class="input_title">
+               <text  fill="#777" class="k_text" >k4</text>
+               <text  fill="#777" class="text" >Световой порог на температуру</text>
+            
+            </div>
+            <input type="text" name="k4" id="k4" value="4" class="input_field"><br>
+         </div>
+
+         <div class="inputs-list_item">
+            <div class="input_title">
+               <text  fill="#777" class="k_text" >k5</text>
+               <text  fill="#777" class="text" >Зависимость от уличной t</text>
+            
+            </div>
+           <input type="text" name="k5" id="k5" value="5" class="input_field"><br>
+         </div>
+
+         <div class="inputs-list_item">
+            <div class="input_title">
+               <text  fill="#777" class="k_text" >k6</text>
+               <text  fill="#777" class="text" >Световой порог на вкл. фар (нету)</text>
+            </div>
+            <input type="text" name="k6" id="k6" value="6" class="input_field"><br>
+         </div>
+
+         <div class="inputs-list_item">
+            <div class="input_title">
+               <text  fill="#777" class="k_text" >k7</text>
+               <text  fill="#777" class="text" >Зависимость от яркости 1/10000</text>
+            </div>
+            <input type="text" name="k7" id="k7" value="7" class="input_field"><br>
+         </div>
+
+         <div class="inputs-list_item">
+            <div class="input_title">
+               <text  fill="#777" class="k_text" >k8</text>
+               <text  fill="#777" class="text" >Коэффициент "П" 1/10</text>
+            </div>
+            <input type="text" name="k8" id="k8" value="8" class="input_field"><br>
+         </div>
+
+
+         <div class="inputs-list_item">
+            <div class="input_title">
+               <text  fill="#777" class="text" >Диапазон сервомотора</text>
+            </div>
+            <input type="text" name="ServoMin" id="ServoMin" value="1500" class="input_field"><br>
+            <vseparator></vseparator>
+            <input type="text" name="ServoMax" id="ServoMax" value="2380" class="input_field"><br>
+         </div>
+         <div class="inputs-list_item">
+            <div class="input_title">
+               <text  fill="#777" class="text" >Диапазон резистора</text>
+            </div>
+            <input type="text" name="PotMin" id="PotMin" value="0" class="input_field"><br>
+            <vseparator></vseparator>
+            <input type="text" name="PotMax" id="PotMax" value="1024" class="input_field"><br>
+         </div>
+      </form>
+
+      <separator></separator>
       
-        
-        <form name="k_form">
-          <text  fill="#777" class="title2" >k1 Допуск, поставить 0 для мануального режима</text>
-          <input type="text" name="k1" id="k1" value="1" class="big"><br>
-          <text  fill="#777" class="title2" >k2 Шаг</text>
-          <input type="text" name="k2" id="k2" value="2" class="big"><br>
-          <text  fill="#777" class="title2" >k3 Задержка</text>
-          <input type="text" name="k3" id="k3" value="3" class="big"><br>
-          </form>
-        
-        <form name="k_form2">
-          <text  fill="#777" class="title2" >k4 Световой порог на температуру</text>
-          <input type="text" name="k4" id="k4" value="4" class="big"><br>
-          <text  fill="#777" class="title2" >k5 Зависимость от уличной t</text>
-          <input type="text" name="k5" id="k5" value="5" class="big"><br>
-          <text  fill="#777" class="title2" >k6 Световой порог на вкл. фар, пока не работает</text>
-          <input type="text" name="k6" id="k6" value="6" class="big"><br>
-          </form>
-        
 
-
-
-  <div class="label">
-    <button id="myBtnSave"  class="button">Save</button>
-  </div>
-  <div class="label">
-    <button id="myBtnLoad"  class="button">Load</button>
-    <text  fill="#777" id="loaded" class="value"></text>
-    <text  fill="#777" id="saved" class="value"></text>
-    <text  fill="#777" id="updated" class="value"></text>
-  </div>
-</div>
-
+      <div class="button-row">
+         <vseparator></vseparator>
+         <button class="button-row_item button get-button text " id="myBtnGet">
+            Get
+         </button>  
+         <button class="button-row_item button set-button text " id="myBtnSet">
+            Set
+         </button>  
+         <vseparator></vseparator>
+      </div>
+      <div class="button-row">
+         <vseparator></vseparator>
+         <button class="button-row_item button load-button text " id="myBtnLoad">
+            Load
+         </button>
+         <button class="button-row_item button save-button text " id="myBtnSave">
+            Save
+         </button>
+         <vseparator></vseparator>
+      </div>
+      <separator></separator>
+   </main>
+</body>
 
 <script>
 
-
-
-var shouldUpdate=0;
-var step=0;
-
-window.onload = (event) => {
-  getParameters()
-  resetClock()
-  console.log('page is fully loaded');
-  shouldUpdate=1;
-};
-function resetClock() {
-  var xhttp = new XMLHttpRequest();
-  xhttp.onreadystatechange = function() {
-    if (this.readyState == 4 && this.status == 200) {
-      console.log(this.responseText);
-    }
-  };
-  xhttp.open("GET", "resetClock", true);
-  xhttp.send();
-}
 
 
 function getData() {
@@ -239,12 +438,73 @@ function getData() {
       document.getElementById("pot_percent").innerHTML=arr[8];
       document.getElementById("servo_percent").innerHTML=arr[9];
       document.getElementById("light_level").innerHTML=arr[10];
-      
     }
   };
   xhttp.open("GET", "getData", true);
   xhttp.send();
 }
+
+function setParameters() {
+   let form = document.forms.k_form;
+   let elem1 = form.elements.k1;
+   let elem2 = form.elements.k2;
+   let elem3 = form.elements.k3;
+   let elem4 = form.elements.k4;
+   let elem5 = form.elements.k5;
+   let elem6 = form.elements.k6;
+   let elem7 = form.elements.k7;
+   let elem8 = form.elements.k8;
+
+   let ServoMinEl = form.elements.ServoMin;
+   let ServoMaxEl = form.elements.ServoMax;
+   let PotMinEl = form.elements.PotMin;
+   let PotMaxEl = form.elements.PotMax;
+
+   console.log("Sending parameters:\n"+elem1.value+" "
+   +elem2.value+" "
+   +elem3.value+" "
+   +elem4.value+" "
+   +elem5.value+" "
+   +elem6.value+" "
+   +elem7.value+" "
+   +elem8.value+" "
+   +ServoMinEl.value+" "
+   +ServoMaxEl.value+" "
+   +PotMinEl.value+" "
+   +PotMaxEl.value+" ");
+
+   var xhttp = new XMLHttpRequest();
+   xhttp.onreadystatechange = function() {
+      if (this.readyState == 4 && this.status == 200) {
+         console.log(this.responseText);
+      }
+      else{
+         if (this.readyState == 4){
+            alert("SetParameters returned with status "+this.status);
+         }
+      }
+   };
+
+   xhttp.timeout = 4000;
+   xhttp.ontimeout = function () { alert("SetParameters Timed out"); }
+
+   xhttp.open("GET", 
+      "setParams?k1="+elem1.value
+      +"&k2="+elem2.value
+      +"&k3="+elem3.value
+      +"&k4="+elem4.value
+      +"&k5="+elem5.value
+      +"&k6="+elem6.value
+      +"&k7="+elem7.value
+      +"&k8="+elem8.value
+      +"&ServoMin="+ServoMinEl.value
+      +"&ServoMax="+ServoMaxEl.value
+      +"&PotMin="+PotMinEl.value
+      +"&PotMax="+PotMaxEl.value
+      , true);
+   xhttp.send();
+}
+
 
 function getParameters() {
   var xhttp = new XMLHttpRequest();
@@ -258,95 +518,170 @@ function getParameters() {
       document.getElementById("k4").value=arr[3];
       document.getElementById("k5").value=arr[4];
       document.getElementById("k6").value=arr[5];
-      document.getElementById("loaded").innerHTML="loaded";
-      setTimeout(() => {  document.getElementById("loaded").innerHTML=""; }, 500);
+      document.getElementById("k7").value=arr[6];
+      document.getElementById("k8").value=arr[7];
+
+      document.getElementById("ServoMin").value=arr[8];
+      document.getElementById("ServoMax").value=arr[9];
+      document.getElementById("PotMin").value=arr[10];
+      document.getElementById("PotMax").value=arr[11];
       pageUpdate();
+    }else{
+      if (this.readyState == 4){
+            alert("GetParameters returned with status "+this.status);
+         }
     }
   };
+  xhttp.timeout = 4000;
+  xhttp.ontimeout = function () { alert("Get Parameters Timed out"); }
   xhttp.open("GET", "getParams", true);
   xhttp.send();
 }
+
+function pageUpdate(){
+   getData();
+   setTimeout(pageUpdate, 2000);
+}
+
 
 function loadParameters() {
   var xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
-      console.log(this.responseText);
-      var arr=this.responseText.split("|");
-      document.getElementById("k1").value=arr[0];
-      document.getElementById("k2").value=arr[1];
-      document.getElementById("k3").value=arr[2];
-      document.getElementById("k4").value=arr[3];
-      document.getElementById("k5").value=arr[4];
-      document.getElementById("k6").value=arr[5];
-      document.getElementById("loaded").innerHTML="loaded";
-      setTimeout(() => {  document.getElementById("loaded").innerHTML=""; }, 500);
-      pageUpdate();
+      getParameters();
+    }else {
+      if (this.readyState == 4){
+            alert("LoadParameters returned with status "+this.status);
+         }
     }
   };
+  xhttp.timeout = 4000;
+  xhttp.ontimeout = function () { alert("Load Parameters Timed out"); }
   xhttp.open("GET", "loadParams", true);
   xhttp.send();
 }
 
-function setParameters(one,two,three,four,five,six) {
-  var xhttp = new XMLHttpRequest();
-  xhttp.onreadystatechange = function() {
-    if (this.readyState == 4 && this.status == 200) {
-      console.log(this.responseText);
-      document.getElementById("updated").innerHTML="upd";
-    setTimeout(() => {  document.getElementById("updated").innerHTML=""; }, 500);
-    }
-  };
-  xhttp.open("GET", "setParams?k1="+one+"&k2="+two+"&k3="+three+"&k4="+four+"&k5="+five+"&k6="+six, true);
-  step=step+1;
-  xhttp.send();
-}
+function saveParameters(){
+   let form = document.forms.k_form;
+   let elem1 = form.elements.k1;
+   let elem2 = form.elements.k2;
+   let elem3 = form.elements.k3;
+   let elem4 = form.elements.k4;
+   let elem5 = form.elements.k5;
+   let elem6 = form.elements.k6;
 
-function saveParameters() {
-  var xhttp = new XMLHttpRequest();
-  xhttp.onreadystatechange = function() {
-    if (this.readyState == 4 && this.status == 200) {
-      console.log(this.responseText);
-      document.getElementById("saved").innerHTML="saved";
-      setTimeout(() => {  document.getElementById("saved").innerHTML=""; }, 500);
+   let elem7 = form.elements.k7;
+   let elem8 = form.elements.k8;
+
+   let ServoMinEl = form.elements.ServoMin;
+   let ServoMaxEl = form.elements.ServoMax;
+   let PotMinEl = form.elements.PotMin;
+   let PotMaxEl = form.elements.PotMax;
+
+   console.log("Sending parameters to SAVE:\n"+elem1.value+" "
+   +elem2.value+" "
+   +elem3.value+" "
+   +elem4.value+" "
+   +elem5.value+" "
+   +elem6.value+" "
+   +elem7.value+" "
+   +elem8.value+" "
+   +ServoMinEl.value+" "
+   +ServoMaxEl.value+" "
+   +PotMinEl.value+" "
+   +PotMaxEl.value+" ");
+
+   var xhttp = new XMLHttpRequest();
+   xhttp.onreadystatechange = function() {
+      if (this.readyState == 4 && this.status == 200) {
+         console.log(this.responseText);
       }
-    };
-  xhttp.open("GET", "saveParams", true);
-  xhttp.send();
+      else{
+         if (this.readyState == 4){
+            alert("SaveParameters returned with status "+this.status);
+         }
+      }
+   };
+
+   xhttp.timeout = 4000;
+   xhttp.ontimeout = function () { alert("SaveParameters Timed out"); }
+
+   xhttp.open("GET", 
+      "saveParams?k1="+elem1.value
+      +"&k2="+elem2.value
+      +"&k3="+elem3.value
+      +"&k4="+elem4.value
+      +"&k5="+elem5.value
+      +"&k6="+elem6.value
+      +"&k7="+elem7.value
+      +"&k8="+elem8.value
+      +"&ServoMin="+ServoMinEl.value
+      +"&ServoMax="+ServoMaxEl.value
+      +"&PotMin="+PotMinEl.value
+      +"&PotMax="+PotMaxEl.value
+      , true);
+   xhttp.send();
 }
 
-function pageUpdate(){
-  let form = document.forms.k_form;
-  let elem1 = form.elements.k1;
-  let elem2 = form.elements.k2;
-  let elem3 = form.elements.k3;
-  form = document.forms.k_form2;
-  let elem4 = form.elements.k4;
-  let elem5 = form.elements.k5;
-  let elem6 = form.elements.k6;
-  form = document.forms.d_form;
-  console.log(elem1.value+" "+elem2.value+" "+elem3.value+" "+elem4.value+" "+elem5.value+" "+elem6.value);
-  console.log("should update: "+shouldUpdate);
-  getData();
-  if(shouldUpdate)
-  {
-  setParameters(elem1.value,elem2.value,elem3.value,elem4.value,elem5.value,elem6.value);
-  }
-  setTimeout(pageUpdate, 1000);
+function GetBtnClick(){
+   document.getElementById("myBtnGet").classList.add("clicked");
+      setTimeout(()=>{
+      document.getElementById("myBtnGet").classList.remove("clicked");
+      }, 500);
+      getParameters()
 }
 
-var x = document.getElementById("myBtnSave");
-x.addEventListener("click", saveParameters);
-x.addEventListener('touchstart', saveParameters);
+function SetBtnClick(){
+   document.getElementById("myBtnSet").classList.add("clicked");
+      setTimeout(()=>{
+      document.getElementById("myBtnSet").classList.remove("clicked");
+      }, 500);
 
-var xx = document.getElementById("myBtnLoad");
-xx.addEventListener("click", loadParameters);
-xx.addEventListener('touchstart', loadParameters);
-pageUpdate();
+   setParameters();
+}
+
+function LoadBtnClick(){
+   document.getElementById("myBtnLoad").classList.add("clicked");
+      setTimeout(()=>{
+      document.getElementById("myBtnLoad").classList.remove("clicked");
+      }, 500);
+
+   loadParameters();
+}
+
+function SaveBtnClick(){
+   document.getElementById("myBtnSave").classList.add("clicked");
+      setTimeout(()=>{
+      document.getElementById("myBtnSave").classList.remove("clicked");
+      }, 500);
+
+   saveParameters();
+}
+
+window.onload = (event) => {
+  console.log('page is fully loaded');
+  shouldUpdate=1;
+
+  var GetBtn = document.getElementById("myBtnGet");
+  GetBtn.addEventListener("click", GetBtnClick);
+  GetBtn.addEventListener('touchstart', GetBtnClick);
+
+  var SetBtn = document.getElementById("myBtnSet");
+  SetBtn.addEventListener("click", SetBtnClick);
+  SetBtn.addEventListener('touchstart', SetBtnClick);
+  
+  var LoadBtn = document.getElementById("myBtnLoad");
+  LoadBtn.addEventListener("click", LoadBtnClick);
+  LoadBtn.addEventListener('touchstart', LoadBtnClick);
+
+  var SaveBtn = document.getElementById("myBtnSave");
+  SaveBtn.addEventListener("click", SaveBtnClick);
+  SaveBtn.addEventListener('touchstart', SaveBtnClick);
+
+  pageUpdate();
+  getParameters();
+};
 
 
 </script>
-
-</body>
-</html>
 )=====";

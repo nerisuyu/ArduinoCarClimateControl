@@ -15,3 +15,5 @@ Libraries used:
 - AdaFruit GFX
 - BH1750
 
+- EEPROM Rotate https://github.com/xoseperez/eeprom_rotate/tree/master?tab=readme-ov-file#eeprom-rotate
+
